@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'audio_length.dart';
 import 'data/sample_lectures.dart';
 import 'lecture_draft.dart';
+import 'lecture_store.dart';
 import 'models/lecture.dart';
 import 'screens/add_lecture_sheet.dart';
 import 'screens/empty_screen.dart';
@@ -53,7 +56,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _lectures = List<Lecture>.of(sampleLectures);
+  final _store = LectureStore();
+  final _added = <Lecture>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final saved = await _store.load();
+    if (!mounted || saved.isEmpty) return;
+    setState(() {
+      _added
+        ..clear()
+        ..addAll(saved);
+    });
+  }
+
+  List<Lecture> get _lectures => [..._added, ...sampleLectures];
 
   Future<void> _add() async {
     final choice = await showAddLectureSheet(context);
@@ -86,7 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openNew(Lecture lecture) {
-    setState(() => _lectures.insert(0, lecture));
+    setState(() => _added.insert(0, lecture));
+    unawaited(_store.save(_added));
     Navigator.of(context).pushNamed('/processing', arguments: lecture);
   }
 
