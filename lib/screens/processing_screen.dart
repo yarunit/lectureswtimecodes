@@ -1,35 +1,53 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../models/lecture.dart';
 import '../theme/app_theme.dart';
+import '../transcribe.dart';
 
-class ProcessingScreen extends StatefulWidget {
-  const ProcessingScreen({super.key, required this.lecture});
+class PendingLecture {
+  const PendingLecture({required this.lecture, required this.onUpdated});
 
   final Lecture lecture;
+  final ValueChanged<Lecture> onUpdated;
+}
+
+class ProcessingScreen extends StatefulWidget {
+  const ProcessingScreen({super.key, required this.pending});
+
+  final PendingLecture pending;
 
   @override
   State<ProcessingScreen> createState() => _ProcessingScreenState();
 }
 
 class _ProcessingScreenState extends State<ProcessingScreen> {
-  Timer? _timer;
+  String _status = 'Finding topics';
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/lecture', arguments: widget.lecture);
-    });
+    _run();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _run() async {
+    var lecture = widget.pending.lecture;
+    final path = lecture.audioPath;
+    if (path != null) {
+      try {
+        final topics = await findTopics(path, onStatus: _setStatus);
+        lecture = lecture.copyWith(topics: topics);
+      } catch (_) {
+        // The lecture still opens. Topics stay at the start marker.
+      }
+    }
+    widget.pending.onUpdated(lecture);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/lecture', arguments: lecture);
+  }
+
+  void _setStatus(String status) {
+    if (!mounted || status == _status) return;
+    setState(() => _status = status);
   }
 
   @override
@@ -45,7 +63,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
             children: [
               Text('NEW LECTURE', style: AppTheme.label(context)),
               const SizedBox(height: 10),
-              Text(widget.lecture.title, style: AppTheme.serif(context, 46, height: 0.98)),
+              Text(widget.pending.lecture.title, style: AppTheme.serif(context, 46, height: 0.98)),
               const Spacer(),
               Center(
                 child: SizedBox(
@@ -69,7 +87,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
                 ),
               ),
               const SizedBox(height: 36),
-              Center(child: Text('Finding topics', style: AppTheme.serif(context, 32))),
+              Center(child: Text(_status, style: AppTheme.serif(context, 32))),
               const SizedBox(height: 8),
               Center(
                 child: Text(

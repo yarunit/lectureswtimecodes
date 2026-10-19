@@ -20,6 +20,16 @@ class Lecture {
   final List<Topic> topics;
   final String? audioPath;
 
+  Lecture copyWith({List<Topic>? topics}) {
+    return Lecture(
+      title: title,
+      date: date,
+      length: length,
+      topics: topics ?? this.topics,
+      audioPath: audioPath,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,
