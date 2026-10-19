@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import '../format.dart';
 import '../models/lecture.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_circle.dart';
 
 class LectureScreen extends StatefulWidget {
   const LectureScreen({super.key, required this.lecture});
@@ -121,6 +122,8 @@ class _LectureScreenState extends State<LectureScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 32),
           children: [
+            const Align(alignment: Alignment.centerLeft, child: BackCircle()),
+            const SizedBox(height: 16),
             Text(
               '${formatDate(lecture.date).toUpperCase()} · ${formatLength(_length).toUpperCase()}',
               style: AppTheme.label(context),

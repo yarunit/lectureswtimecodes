@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
 import '../format.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_circle.dart';
 
 class RecordedClip {
   const RecordedClip({required this.length, this.path});
@@ -49,6 +51,12 @@ class _RecordScreenState extends State<RecordScreen> {
       if (!allowed || !mounted || _closed) {
         _markMicrophoneFailed();
         return;
+      }
+      try {
+        final session = await AudioSession.instance;
+        await session.setActive(true);
+      } catch (_) {
+        // Recording can still start if the session is already active.
       }
       await _recorder.start(
         const RecordConfig(
@@ -143,13 +151,8 @@ class _RecordScreenState extends State<RecordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  onPressed: _cancel,
-                  icon: Icon(Icons.close, color: ink.withValues(alpha: 0.7)),
-                ),
-              ),
+              BackCircle(onPressed: _cancel),
+              const SizedBox(height: 18),
               Text('RECORDING', style: AppTheme.label(context)),
               const SizedBox(height: 10),
               Text('New lecture', style: AppTheme.serif(context, 48)),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/lecture.dart';
 import '../theme/app_theme.dart';
 import '../transcribe.dart';
+import '../widgets/back_circle.dart';
 
 class PendingLecture {
   const PendingLecture({required this.lecture, required this.onUpdated});
@@ -57,10 +58,12 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 36, 28, 24),
+          padding: const EdgeInsets.fromLTRB(28, 18, 28, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BackCircle(),
+              const SizedBox(height: 18),
               Text('NEW LECTURE', style: AppTheme.label(context)),
               const SizedBox(height: 10),
               Text(widget.pending.lecture.title, style: AppTheme.serif(context, 46, height: 0.98)),

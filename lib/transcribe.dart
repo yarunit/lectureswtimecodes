@@ -15,6 +15,11 @@ import 'topics.dart';
 
 Future<List<Topic>> findTopics(String path, {void Function(String status)? onStatus}) async {
   onStatus?.call('Finding topics');
+  // The iPhone build links a small stand-in for the speech library, so a
+  // recording still opens. Topic names from the audio are produced on Android.
+  if (Platform.isIOS) {
+    return topicsFromSpeech(const []);
+  }
   final wav = await wavForTranscription(path);
   debugPrint('wav bytes ${File(wav).lengthSync()}');
   try {
@@ -68,7 +73,7 @@ List<SpeechSpan> _spans(String wavPath) {
 Map<String, dynamic> _transcribe((String, String) paths) {
   final wavPath = paths.$1;
   final modelPath = paths.$2;
-  final lib = DynamicLibrary.open('libwhisper.so');
+  final lib = Platform.isIOS ? DynamicLibrary.process() : DynamicLibrary.open('libwhisper.so');
   final request = lib.lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('request');
   final release = lib.lookupFunction<Void Function(Pointer<Utf8>), void Function(Pointer<Utf8>)>('whisper_kit_free');
   final body = jsonEncode({

@@ -8,4 +8,4 @@ The three lectures already in the list are sample data and have no audio. Record
 
 After a recording or an opened file, the app listens to the audio on the phone and splits it into topics. Tap a topic to jump there. The first time, it downloads a small speech model, so the phone needs a network connection once.
 
-To put it on an iPhone, open the `ios` folder in Xcode, pick your phone, and run.
+To put it on an iPhone, open `ios/Runner.xcworkspace` in Xcode, pick your phone, and press Run. Allow the microphone when the phone asks. Recording and playback work on the phone. The back button on a lecture, a recording, and the topic screen returns to the list.
