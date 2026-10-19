@@ -1,12 +1,17 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'audio_length.dart';
 import 'data/sample_lectures.dart';
+import 'lecture_draft.dart';
 import 'models/lecture.dart';
+import 'screens/add_lecture_sheet.dart';
 import 'screens/empty_screen.dart';
 import 'screens/lecture_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/processing_screen.dart';
+import 'screens/record_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -40,22 +45,60 @@ class LecturesApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  void _add(BuildContext context) {
-    Navigator.of(context).pushNamed('/processing', arguments: sampleLectures[1]);
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _lectures = List<Lecture>.of(sampleLectures);
+
+  Future<void> _add() async {
+    final choice = await showAddLectureSheet(context);
+    if (!mounted || choice == null) return;
+    if (choice == AddChoice.record) {
+      await _record();
+    } else {
+      await _openFile();
+    }
+  }
+
+  Future<void> _record() async {
+    final length = await Navigator.of(context).push<Duration>(
+      MaterialPageRoute(builder: (_) => const RecordScreen()),
+    );
+    if (!mounted || length == null) return;
+    _openNew(recordedLecture(length, DateTime.now()));
+  }
+
+  Future<void> _openFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mp3', 'm4a', 'wav', 'aac', 'ogg'],
+    );
+    final path = result?.files.single.path;
+    if (!mounted || path == null) return;
+    final length = await readAudioLength(path);
+    if (!mounted) return;
+    _openNew(lectureFromFile(path: path, length: length, now: DateTime.now()));
+  }
+
+  void _openNew(Lecture lecture) {
+    setState(() => _lectures.insert(0, lecture));
+    Navigator.of(context).pushNamed('/processing', arguments: lecture);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (sampleLectures.isEmpty) {
-      return EmptyScreen(onAdd: () => _add(context));
+    if (_lectures.isEmpty) {
+      return EmptyScreen(onAdd: _add);
     }
     return LibraryScreen(
-      lectures: sampleLectures,
+      lectures: _lectures,
       onOpen: (lecture) => Navigator.of(context).pushNamed('/lecture', arguments: lecture),
-      onAdd: () => _add(context),
+      onAdd: _add,
     );
   }
 }

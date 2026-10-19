@@ -4,4 +4,4 @@ Phone app that turns a lecture into a list of topics. Tap a topic and the player
 
 Open the folder in Android Studio and run it on a phone or emulator.
 
-The lectures in the app are sample data. Recording and speech-to-text are not in yet.
+The three lectures already in the list are sample data. Open file plays an audio file from the phone. Record counts time and does not save sound yet. Speech-to-text is not in yet.
