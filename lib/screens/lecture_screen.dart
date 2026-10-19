@@ -82,19 +82,21 @@ class _LectureScreenState extends State<LectureScreen> {
     return current;
   }
 
-  void _seek(Duration position) {
+  Future<void> _seek(Duration position) async {
     final max = _length;
     final next = position < Duration.zero
         ? Duration.zero
         : position > max
             ? max
             : position;
+    if (mounted) setState(() => _position = next);
     final player = _player;
-    if (player != null) {
-      player.seek(next);
-      return;
+    if (player == null) return;
+    await player.seek(next);
+    // After the file has already finished, seek alone stays at the end.
+    if (player.processingState == ProcessingState.completed) {
+      await player.play();
     }
-    setState(() => _position = next);
   }
 
   void _toggle() {

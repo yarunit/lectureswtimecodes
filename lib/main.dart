@@ -56,8 +56,8 @@ class LecturesApp extends StatelessWidget {
       darkTheme: AppTheme.dark(),
       onGenerateRoute: (settings) {
         if (settings.name == '/processing') {
-          final lecture = settings.arguments! as Lecture;
-          return MaterialPageRoute(builder: (_) => ProcessingScreen(lecture: lecture));
+          final pending = settings.arguments! as PendingLecture;
+          return MaterialPageRoute(builder: (_) => ProcessingScreen(pending: pending));
         }
         if (settings.name == '/lecture') {
           final lecture = settings.arguments! as Lecture;
@@ -121,10 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['mp3', 'm4a', 'wav', 'aac', 'ogg'],
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
     final path = result?.files.single.path;
     if (!mounted || path == null) return;
     final stored = await copyAudioIntoApp(path);
@@ -143,7 +140,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openNew(Lecture lecture) {
     setState(() => _added.insert(0, lecture));
     unawaited(_store.save(_added));
-    Navigator.of(context).pushNamed('/processing', arguments: lecture);
+    Navigator.of(context).pushNamed(
+      '/processing',
+      arguments: PendingLecture(lecture: lecture, onUpdated: _replace),
+    );
+  }
+
+  void _replace(Lecture lecture) {
+    final path = lecture.audioPath;
+    if (!mounted || path == null) return;
+    setState(() {
+      final index = _added.indexWhere((item) => item.audioPath == path);
+      if (index >= 0) _added[index] = lecture;
+    });
+    unawaited(_store.save(_added));
   }
 
   @override
