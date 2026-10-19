@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../format.dart';
 import '../models/lecture.dart';
@@ -17,28 +18,73 @@ class LectureScreen extends StatefulWidget {
 
 class _LectureScreenState extends State<LectureScreen> {
   Duration _position = Duration.zero;
+  late Duration _length = widget.lecture.length;
   bool _playing = true;
   Timer? _timer;
+  AudioPlayer? _player;
+  final _subscriptions = <StreamSubscription<dynamic>>[];
 
   @override
   void initState() {
     super.initState();
-    if (widget.lecture.topics.isNotEmpty) {
-      _position = widget.lecture.topics.first.start;
+    final path = widget.lecture.audioPath;
+    if (path == null) {
+      if (widget.lecture.topics.isNotEmpty) {
+        _position = widget.lecture.topics.first.start;
+      }
+      _startTimer();
+    } else {
+      _startAudio(path);
     }
+  }
+
+  void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!_playing || !mounted) return;
       final next = _position + const Duration(seconds: 1);
       setState(() {
-        _position = next > widget.lecture.length ? widget.lecture.length : next;
-        if (_position >= widget.lecture.length) _playing = false;
+        _position = next > _length ? _length : next;
+        if (_position >= _length) _playing = false;
       });
     });
+  }
+
+  Future<void> _startAudio(String path) async {
+    final player = AudioPlayer();
+    _player = player;
+    try {
+      final duration = await player.setFilePath(path);
+      if (!mounted) {
+        await player.dispose();
+        return;
+      }
+      if (duration != null && duration > Duration.zero) {
+        setState(() => _length = duration);
+      }
+      _subscriptions.add(player.positionStream.listen((position) {
+        if (!mounted) return;
+        setState(() => _position = position);
+      }));
+      _subscriptions.add(player.playerStateStream.listen((state) {
+        if (!mounted) return;
+        setState(() => _playing = state.playing);
+      }));
+      await player.play();
+    } catch (_) {
+      await player.dispose();
+      if (!mounted || _player != player) return;
+      _player = null;
+      _startTimer();
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _player?.dispose();
     super.dispose();
   }
 
@@ -51,26 +97,35 @@ class _LectureScreenState extends State<LectureScreen> {
   }
 
   void _seek(Duration position) {
-    final max = widget.lecture.length;
-    setState(() {
-      if (position < Duration.zero) {
-        _position = Duration.zero;
-      } else if (position > max) {
-        _position = max;
-      } else {
-        _position = position;
-      }
-    });
+    final max = _length;
+    final next = position < Duration.zero
+        ? Duration.zero
+        : position > max
+            ? max
+            : position;
+    final player = _player;
+    if (player != null) {
+      player.seek(next);
+      return;
+    }
+    setState(() => _position = next);
+  }
+
+  void _toggle() {
+    final player = _player;
+    if (player != null) {
+      _playing ? player.pause() : player.play();
+      return;
+    }
+    setState(() => _playing = !_playing);
   }
 
   @override
   Widget build(BuildContext context) {
     final lecture = widget.lecture;
     final ink = Theme.of(context).colorScheme.onSurface;
-    final remaining = lecture.length - _position;
-    final progress = lecture.length.inMilliseconds == 0
-        ? 0.0
-        : _position.inMilliseconds / lecture.length.inMilliseconds;
+    final remaining = _length - _position;
+    final progress = _length.inMilliseconds == 0 ? 0.0 : _position.inMilliseconds / _length.inMilliseconds;
 
     return Scaffold(
       body: SafeArea(
@@ -78,7 +133,7 @@ class _LectureScreenState extends State<LectureScreen> {
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 32),
           children: [
             Text(
-              '${formatDate(lecture.date).toUpperCase()} · ${formatLength(lecture.length).toUpperCase()}',
+              '${formatDate(lecture.date).toUpperCase()} · ${formatLength(_length).toUpperCase()}',
               style: AppTheme.label(context),
             ),
             const SizedBox(height: 8),
@@ -86,11 +141,11 @@ class _LectureScreenState extends State<LectureScreen> {
             const SizedBox(height: 22),
             _PlayerCard(
               position: _position,
-              total: lecture.length,
+              total: _length,
               remaining: remaining,
               progress: progress,
               playing: _playing,
-              onToggle: () => setState(() => _playing = !_playing),
+              onToggle: _toggle,
               onSeek: _seek,
             ),
             const SizedBox(height: 28),
@@ -99,7 +154,7 @@ class _LectureScreenState extends State<LectureScreen> {
                 Text('Topics', style: AppTheme.serif(context, 28)),
                 const Spacer(),
                 Text(
-                  '${lecture.topics.length} sections',
+                  lecture.topics.length == 1 ? '1 section' : '${lecture.topics.length} sections',
                   style: TextStyle(color: ink.withValues(alpha: 0.45), fontSize: 14),
                 ),
               ],

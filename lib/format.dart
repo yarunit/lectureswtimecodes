@@ -7,6 +7,7 @@ String formatDate(DateTime date) {
 String formatLength(Duration duration) {
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);
+  if (duration.inSeconds < 60) return '${duration.inSeconds} sec';
   if (hours == 0) return '$minutes min';
   if (minutes == 0) return '$hours hr';
   return '$hours hr $minutes min';
