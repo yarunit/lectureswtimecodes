@@ -1,17 +1,7 @@
 # lectureswtimecodes
 
-A new Flutter project.
+Phone app that turns a lecture into a list of topics. Tap a topic and the player jumps there.
 
-## Getting Started
+Open the folder in Android Studio and run it on a phone or emulator.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The lectures in the app are sample data. Recording and speech-to-text are not in yet.
