@@ -19,34 +19,20 @@ class LectureScreen extends StatefulWidget {
 class _LectureScreenState extends State<LectureScreen> {
   Duration _position = Duration.zero;
   late Duration _length = widget.lecture.length;
-  bool _playing = true;
-  Timer? _timer;
+  bool _playing = false;
   AudioPlayer? _player;
   final _subscriptions = <StreamSubscription<dynamic>>[];
+  String? _problem;
 
   @override
   void initState() {
     super.initState();
     final path = widget.lecture.audioPath;
     if (path == null) {
-      if (widget.lecture.topics.isNotEmpty) {
-        _position = widget.lecture.topics.first.start;
-      }
-      _startTimer();
-    } else {
-      _startAudio(path);
+      _problem = 'No audio in this lecture';
+      return;
     }
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!_playing || !mounted) return;
-      final next = _position + const Duration(seconds: 1);
-      setState(() {
-        _position = next > _length ? _length : next;
-        if (_position >= _length) _playing = false;
-      });
-    });
+    _startAudio(path);
   }
 
   Future<void> _startAudio(String path) async {
@@ -70,17 +56,17 @@ class _LectureScreenState extends State<LectureScreen> {
         setState(() => _playing = state.playing);
       }));
       await player.play();
+      if (mounted) setState(() => _playing = true);
     } catch (_) {
       await player.dispose();
       if (!mounted || _player != player) return;
       _player = null;
-      _startTimer();
+      setState(() => _problem = 'Could not play this file');
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
@@ -113,11 +99,12 @@ class _LectureScreenState extends State<LectureScreen> {
 
   void _toggle() {
     final player = _player;
-    if (player != null) {
-      _playing ? player.pause() : player.play();
-      return;
+    if (player == null) return;
+    if (_playing) {
+      player.pause();
+    } else {
+      player.play();
     }
-    setState(() => _playing = !_playing);
   }
 
   @override
@@ -138,6 +125,10 @@ class _LectureScreenState extends State<LectureScreen> {
             ),
             const SizedBox(height: 8),
             Text(lecture.title, style: AppTheme.serif(context, 44, height: 0.98)),
+            if (_problem != null) ...[
+              const SizedBox(height: 8),
+              Text(_problem!, style: TextStyle(color: ink.withValues(alpha: 0.45), fontSize: 15)),
+            ],
             const SizedBox(height: 22),
             _PlayerCard(
               position: _position,
