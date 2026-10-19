@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'audio_files.dart';
 import 'audio_length.dart';
 import 'data/sample_lectures.dart';
 import 'lecture_draft.dart';
@@ -88,11 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _record() async {
-    final length = await Navigator.of(context).push<Duration>(
-      MaterialPageRoute(builder: (_) => const RecordScreen()),
+    final outputPath = await newRecordingPath();
+    if (!mounted) return;
+    final clip = await Navigator.of(context).push<RecordedClip>(
+      MaterialPageRoute(builder: (_) => RecordScreen(outputPath: outputPath)),
     );
-    if (!mounted || length == null) return;
-    _openNew(recordedLecture(length, DateTime.now()));
+    if (!mounted || clip == null) return;
+    final length = await _lengthOf(clip.path, clip.length);
+    if (!mounted) return;
+    _openNew(recordedLecture(length, DateTime.now(), audioPath: clip.path));
   }
 
   Future<void> _openFile() async {
@@ -102,9 +107,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     final path = result?.files.single.path;
     if (!mounted || path == null) return;
-    final length = await readAudioLength(path);
+    final stored = await copyAudioIntoApp(path);
+    final length = await readAudioLength(stored);
     if (!mounted) return;
-    _openNew(lectureFromFile(path: path, length: length, now: DateTime.now()));
+    _openNew(lectureFromFile(path: stored, length: length, now: DateTime.now(), title: titleFromPath(path)));
+  }
+
+  Future<Duration> _lengthOf(String? path, Duration fallback) async {
+    if (path == null) return fallback;
+    final read = await readAudioLength(path);
+    if (read.inSeconds <= 1 && fallback > read) return fallback;
+    return read;
   }
 
   void _openNew(Lecture lecture) {
