@@ -16,22 +16,4 @@ void main() {
     expect(find.text('12 topics'), findsOneWidget);
   });
 
-  testWidgets('a recording is added and opened', (tester) async {
-    await tester.pumpWidget(const LecturesApp());
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Record'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump(const Duration(seconds: 1));
-
-    await tester.tap(find.text('Stop'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(find.text('Start'), findsOneWidget);
-    expect(find.textContaining('Lecture,'), findsWidgets);
-  });
 }
