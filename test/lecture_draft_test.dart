@@ -31,4 +31,15 @@ void main() {
     expect(copy.topics.single.title, 'Start');
     expect(copy.topics.single.start, Duration.zero);
   });
+
+  test('a recording keeps the audio path', () {
+    final lecture = recordedLecture(
+      const Duration(seconds: 12),
+      DateTime(2026, 10, 19),
+      audioPath: '/tmp/recording.m4a',
+    );
+
+    expect(lecture.audioPath, '/tmp/recording.m4a');
+    expect(lecture.length, const Duration(seconds: 12));
+  });
 }

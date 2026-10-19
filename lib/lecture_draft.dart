@@ -1,12 +1,13 @@
 import 'format.dart';
 import 'models/lecture.dart';
 
-Lecture recordedLecture(Duration length, DateTime now) {
+Lecture recordedLecture(Duration length, DateTime now, {String? audioPath}) {
   final safe = length.inSeconds < 1 ? const Duration(seconds: 1) : length;
   return Lecture(
     title: 'Lecture, ${formatDate(now)}',
     date: DateTime(now.year, now.month, now.day),
     length: safe,
+    audioPath: audioPath,
     topics: const [Topic(start: Duration.zero, title: 'Start')],
   );
 }
@@ -15,10 +16,11 @@ Lecture lectureFromFile({
   required String path,
   required Duration length,
   required DateTime now,
+  String? title,
 }) {
   final safe = length.inSeconds < 1 ? const Duration(seconds: 1) : length;
   return Lecture(
-    title: titleFromPath(path),
+    title: (title ?? titleFromPath(path)).trim(),
     date: DateTime(now.year, now.month, now.day),
     length: safe,
     audioPath: path,
